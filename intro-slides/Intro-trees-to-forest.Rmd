@@ -1,0 +1,229 @@
+---
+title: 'From trees to forest'
+author: "JR Ferrer-Paris"
+date: "29/06/2021"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,  warning=FALSE)
+data("iris")
+require(ggplot2)
+require(rpart)
+require(dplyr)
+require(raster)
+require(sp)
+clrs <- c(setosa="maroon",versicolor="springgreen3",virginica="skyblue4")
+pchs <- c(setosa=19,versicolor=17,virginica=15)
+plgs <- rgb(c(1,0,0),c(0,1,0),c(0,0,1),0.324)
+```
+
+## Classification trees
+
+*Classification Tree* refers to a statistical method to find rules for assigning observation to known classes or categories.
+
+
+### Example: Prof. X and his three students
+
+Prof. X noticed that three species of Iris differed in the size of their flowers and asked his three favorite students to measure individuals and find out how to _discriminate_ the species based on measurements.
+
+## Rule A...
+
+Student A measured *Sepal Length* and *Petal width* of 33 individuals, and concluded "this is easy". With a simple rule he got 100% of the individuals in the right species.
+
+```{r studentA}
+
+#ggplot(data=iris,aes(x=Petal.Width,y=Petal.Length,color=Species)) +
+#geom_point()
+
+set.seed(234)
+ssA <- iris[sample(1:150,33),]
+
+# ssA %>% group_by(Species) %>% summarise(minPW=min(Petal.Width),maxPW=max(Petal.Width))
+
+plot(Sepal.Length~Petal.Width,data=ssA,type="n")
+rect(0,0,0.7,10,col=plgs[1],border=NA)
+rect(0.7,0,1.75,10,col=plgs[2],border=NA)
+rect(1.75,0,10,10,col=plgs[3],border=NA)
+points(Sepal.Length~Petal.Width,data=ssA,col=clrs[Species],pch=pchs[Species],cex=1.2)
+abline(v=c(0.7,1.75),lty=2)
+
+ruleA <- c(0,0.7,1.75,10)
+# ssA %>% mutate(prediction=cut(Petal.Width,breaks=ruleA,labels=levels(Species))) %>% select(Species,prediction) %>% table
+
+```
+
+## Rule B...
+
+Student B measured *Sepal width* and *Petal length* of only 15 individuals. He figured out that using only *Petal length* he could assign most of the individuals to the right species:
+
+```{r studentB}
+
+set.seed(345)
+ssB <- iris[sample(1:150,15),]
+
+ruleB <- c(0,2.85,5.1,10)
+
+plot(Petal.Length~Sepal.Width,data=ssB,type="n")
+rect(0,ruleB[1],6,ruleB[2],col=plgs[1],border=NA)
+rect(0,ruleB[2],6,ruleB[3],col=plgs[2],border=NA)
+rect(0,ruleB[3],6,ruleB[4],col=plgs[3],border=NA)
+abline(h=ruleB[2:3],lty=2)
+points(Petal.Length~Sepal.Width,data=ssB,col=clrs[Species],pch=pchs[Species],cex=1.2)
+
+#ssB %>% group_by(Species) %>% summarise(minPW=min(Petal.Length),maxPW=max(Petal.Length))
+
+#ssB %>% mutate(prediction=cut(Petal.Length,breaks=ruleB,labels=levels(Species))) %>% select(Species,prediction) %>% table
+```
+
+## Rule C...
+
+Student C measured *Sepal Length* and *Width* of 100 individuals but was not satified with any solution he could think of: 
+
+```{r studentC}
+set.seed(456)
+ssC <- iris[sample(1:150,100),]
+
+
+##pol1 <- locator(); toString(pol1)
+pol1 <- list(x=c(4.212788, 5.089930, 5.677706, 6.003243, 5.533023, 4.981418, 4.312258), y=c(3.022962, 4.192861, 4.472395, 4.058271, 3.281789, 2.836606, 2.784841))
+pol2 <- list(x=c(4.83673457996093, 4.83673457996093, 5.37025397711415, 6.00324309238069, 7.06123918504047, 6.82612894222718, 6.02132849567402), y=c(1.95659370506471, 2.30859881770251, 3.06437450071896, 3.49920434574213, 3.27143633168238, 2.6295446556958, 2.00835916280556))
+pol3 <- list(x=c(6.13888361708066, 8.01072285794027, 8.00168015629361, 7.78465531677365, 6.73570192576054, 6.48250627965392), y=c(3.47849816264579, 3.92368109921713, 3.60273526122384, 2.69166320498482, 2.32930500079885, 2.92978431059275))
+plot(Sepal.Width~Sepal.Length,data=ssC,type="n")
+polygon(pol1,col=plgs[1],border=NA)
+polygon(pol2,col=plgs[2],border=NA)
+polygon(pol3,col=plgs[3],border=NA)
+points(Sepal.Width~Sepal.Length,data=ssC,col=clrs[Species],pch=pchs[Species],cex=1.2)
+
+
+```
+
+## Rule C...
+
+He said: "Maybe I should use a *classification tree* to solve this problem". So he did, and found a solution that got at least 79% right:
+
+```{r studentC2}
+fitC <- rpart(Species ~ Sepal.Width + Sepal.Length, ssC)
+par(xpd = TRUE)
+plot(fitC, compress = TRUE)
+text(fitC, use.n = TRUE)
+
+```
+
+## Rule C...
+
+```{r studentC3}
+ruleC <- function(fit,ynew) {
+  prd <- predict(fit,ynew)
+  r <- apply(prd,1,which.max)
+  colnames(prd)[r]
+}
+
+# ruleC(fitC,ssC)
+
+# ssC %>% mutate(prediction=ruleC(fitC,ssC)) %>% dplyr::select(Species,prediction) %>% table
+
+nwdt <- expand.grid(Sepal.Length=seq(4,8,.25),Sepal.Width=seq(2,5,.25))
+prediction <- predict(fitC,nwdt)
+pred.grid <- cbind(nwdt,prediction)
+coordinates(pred.grid) <- 1:2
+gridded(pred.grid) <- T
+rgrid <- stack(pred.grid)
+
+plotRGB(rgrid,scale=1,alpha=.324)
+
+
+points(Sepal.Width~Sepal.Length,data=ssC,col=clrs[Species],pch=pchs[Species],cex=1.2)
+
+#fitC <- rpart(Species ~ Sepal.Width + Sepal.Length, ssC,control=rpart.control(minsplit = 5,cp=.00001))
+#par(xpd = TRUE)
+#plot(fitC, compress = TRUE)
+#text(fitC, use.n = TRUE)
+
+#best <- fitC$cptable[which.min(fitC$cptable[,"xerror"]),"CP"]
+
+#produce a pruned tree based on the best cp value
+#fitC.pruned <- prune(fitC, cp=best)
+
+```
+
+
+## Three different trees...
+
+In fact each student used a different *classification tree*:
+
+```{r threetrees}
+
+fitA <- rpart(Species ~ Petal.Width + Sepal.Length, ssA)
+fitB <- rpart(Species ~ Sepal.Width + Petal.Length, ssB,control=rpart.control(minsplit = 5,cp=.00001))
+
+layout(matrix(c(2,3,1,1),ncol=2))
+par(xpd = TRUE)
+plot(fitC, compress = TRUE,main='Student C')
+text(fitC, use.n = TRUE)
+plot(fitA, compress = TRUE,main='Student A')
+text(fitA, use.n = TRUE)
+plot(fitB, compress = TRUE,main='Student B')
+text(fitB, use.n = TRUE)
+
+```
+
+## Compare the three results
+
+They all came to Prof. X and presented their results.
+
+He said: "Each one of you measured different individuals and different variables, and came to different classification rules. But what can we learn from this?"
+
+If we take the rules (classification tree) of each student and test it across the three datasets:
+
+```{r compare}
+
+compare.results <- matrix(NA,ncol=3,nrow=3,dimnames=list(sprintf("Rule %s ",LETTERS[1:3]),sprintf("Data %s ",LETTERS[1:3])))
+
+compare.results[2,1] <-  ssA %>% mutate(prediction=cut(Petal.Length,breaks=ruleB,labels=levels(Species))) %>% summarise(percentage_correct=mean(Species==prediction)) %>% pull
+
+compare.results[2,2] <- ssB %>% mutate(prediction=cut(Petal.Length,breaks=ruleB,labels=levels(Species))) %>% summarise(percentage_correct=mean(Species==prediction)) %>% pull
+
+compare.results[2,3] <- ssC %>% mutate(prediction=cut(Petal.Length,breaks=ruleB,labels=levels(Species))) %>% summarise(percentage_correct=mean(Species==prediction)) %>% pull
+
+
+compare.results[1,1] <-  ssA %>% mutate(prediction=cut(Petal.Width,breaks=ruleA,labels=levels(Species))) %>% summarise(percentage_correct=mean(Species==prediction)) %>% pull
+
+compare.results[1,2] <- ssB %>% mutate(prediction=cut(Petal.Width,breaks=ruleA,labels=levels(Species))) %>% summarise(percentage_correct=mean(Species==prediction)) %>% pull
+
+compare.results[1,3] <- ssC %>% mutate(prediction=cut(Petal.Width,breaks=ruleA,labels=levels(Species))) %>% summarise(percentage_correct=mean(Species==prediction)) %>% pull
+
+compare.results[3,1] <- mean(ssA$Species==ruleC(fitC,ssA))
+compare.results[3,2] <- mean(ssB$Species==ruleC(fitC,ssB))
+compare.results[3,3] <- mean(ssC$Species==ruleC(fitC,ssC))
+
+compare.results
+
+```
+
+## What have we learnt?
+
+- Some variables are more informative than others
+- The value of your rules (thresholds) depend on the data you sampled
+- If you pick the 'right' variable and the 'right' thresholds your classification tree will be simple and robust (everybody wants to be student A!)
+
+
+## But if three trees are not good enough...
+
+Now imagine instead of 3 students, we have 30 students, each one has a different sample of individuals, and each one chooses randomly two variables to measure:
+
+- we will have 30 slightly different trees to classify the species!
+- we can test each tree with each (sub-)data set, 
+- so we will have 900 tests of accuracy...
+
+## But if three trees are not good enough...
+
+- We can of course select the tree(s) with the best outcome overall... 
+- We can compare which variables produce better trees (variable importance)
+- But what happens if a data set is better predicted by a different set of rules?
+- Or if we go to the level of the observation, which trees predict that observation?
+
+```{r compare2}
+
+compare.results[-1,]
+```
