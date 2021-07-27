@@ -18,6 +18,7 @@ José Rafael Ferrer-Paris (a.k.a. JR) is currently Research Fellow at the Center
 ## Material based on:
 
 - https://victorzhou.com/blog/intro-to-random-forests/
+- https://www.freecodecamp.org/news/how-to-use-the-tree-based-algorithm-for-machine-learning/
 - https://dlab-berkeley.github.io/Machine-Learning-in-R/slides.html#1
 - https://github.com/dlab-berkeley/Machine-Learning-in-R
 - https://github.com/dlab-berkeley/Machine-Learning-with-tidymodels
@@ -26,3 +27,8 @@ José Rafael Ferrer-Paris (a.k.a. JR) is currently Research Fellow at the Center
 - https://icer.msu.edu/education-events/classification-regression-trees-random-forests-r
 - https://www.statology.org/classification-and-regression-trees-in-r/
 - https://davetang.org/muse/2013/03/12/building-a-classification-tree-in-r/
+- https://towardsdatascience.com/why-random-forest-is-my-favorite-machine-learning-model-b97651fa3706
+- https://careerfoundry.com/en/blog/data-analytics/what-is-random-forest/
+
+Example with caret package:
+- https://www.janbasktraining.com/blog/random-forest-in-r/

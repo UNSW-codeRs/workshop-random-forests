@@ -2,7 +2,7 @@
 title: 'Decision Trees in R'
 author: "JR Ferrer-Paris"
 date: "09/07/2021"
-editor_options: 
+editor_options:
   chunk_output_type: console
 ---
 ## Overview
@@ -16,7 +16,7 @@ Decision trees are recursive partitioning methods that divide the predictor spac
 
 ### Load data
 
-Here we will work with ... examples. 
+Here we will work with two examples.
 
 First, we will use the _iris_ dataset from base R.
 ```{r}
@@ -50,7 +50,7 @@ library(rpart.plot)
 ```
 
 
-## Fit a model 
+## Fit a model
 
 ### _iris_ dataset
 Let's start with a familiar dataset:
@@ -95,8 +95,7 @@ The plot is a great visual aid, but what do all these values mean?
 rpart.plot::rpart.plot(tree)
 ```
 
-Here the output or response variable has two classes, so the rules are slightly simplified. Each box is labelled with the predominant class on top, the proportion of observations in the second class within each group, and the percentage of total observation within the group. Compare figure and text to try make sense of this. 
-
+Here the output or response variable has two classes, so the rules are slightly simplified. Each box is labelled with the predominant class on top, the proportion of observations in the second class within each group, and the percentage of total observation within the group. Compare figure and text to try make sense of this.
 
 
 We can also look inside of `tree` to see what we can unpack. "variable.importance" is one we should check out!
@@ -166,4 +165,3 @@ rpart.plot(tree_pruned6)
 You can also get more fine-grained control by checking out the "control" argument inside the rpart function. Type `?rpart` to learn more.
 
 Be sure to check out [gormanalysis](https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/) excellent overview to help internalize what you learned in this example.
-

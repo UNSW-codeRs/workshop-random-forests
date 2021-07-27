@@ -1,0 +1,192 @@
+---
+title: "Random Forest in R"
+author: "JR Ferrer-Paris"
+date: "28/07/2021"
+editor_options:
+  chunk_output_type: console
+---
+
+## Overview
+
+The random forest algorithm seeks to improve on the performance of a single decision tree by taking the average of many trees. Thus, a random forest can be viewed as an **ensemble** method, or model averaging approach. The algorithm was invented by UC Berkeley's own Leo Breiman in 2001, who was also a co-creator of decision trees (see his [1984 CART book](https://www.amazon.com/Classification-Regression-Wadsworth-Statistics-Probability/dp/0412048418)).
+
+Random forests are an extension of **bagging**, in which multiple samples of the original data are drawn with replacement (aka "bootstrap samples"). An algorithm is fit separately to each sample, then the average of those estimates is used for prediction. While bagging can be used by any algorithm, random forest uses decision trees as its base learner. Random forests add another level of randomness by also randomly sampling the features (or covariates) at each split in each decision tree. This makes the decision trees use different covariates and therefore be more unique. As a result, the average of these trees tends to be more accurate overall.
+
+## What data do we need?
+
+The same as any regular classification decision tree!
+
+- Y: The output or response variable is a categorical variable with two or more classes (in R: factor with two or more levels)
+- X: A set of predictors or features, might be a mix of continuous and categorical variables, they should not have any missing values
+
+### Load data
+
+Here we will work again with two examples.
+
+First, we will use the _iris_ dataset from base R.
+```{r}
+data(iris)
+str(iris)
+```
+
+
+We can load the Breast Cancer dataset from the _mlbench_ package
+```{r}
+require(mlbench)
+data(BreastCancer)
+str(BreastCancer)
+```
+
+
+
+## What package to use
+
+Random Forests are implemented in several packages:
+- _randomForest_: Breiman and Cutler's Random Forests for Classification and Regression
+- _ranger_: A Fast Implementation of Random Forests
+- _party_: A Laboratory for Recursive Partytioning
+- _RandomForestsGLS_: Random Forests for Dependent Data
+- _randomForestSRC_: Fast Unified Random Forests for Survival, Regression, and Classification (RF-SRC)
+
+Some helper packages are:
+- _randomForestExplainer_: Explaining and Visualizing Random Forests in Terms of Variable Importance
+- _vip_: Variable Importance Plots
+- _varImp_: Variable Importance Plots
+- _tidymodels_: tidy model framework
+
+### Load packages
+
+Here we will work with package _randomForest_, and we will also load one additional packages for creating the plots
+
+```{r load_packages}
+library(randomForest)
+# auxiliary packages for plotting:
+library(vip)
+```
+
+
+## Fit a model
+
+### _iris_ dataset
+Let's start with a familiar dataset:
+
+```{r}
+set.seed(3)
+
+rf_model = randomForest(Species ~ ., data = iris,importance=TRUE)
+print(rf_model)
+```
+The "OOB estimate of error rate" shows us how accurate our model is. $accuracy = 1 - error rate$. OOB stands for "out of bag" - and bag is short for "bootstrap aggregation". So OOB estimates performance by comparing the predicted outcome value to the actual value across all trees using only the observations that were not part of the training data for that tree.
+
+We can examine the relative variable importance in table and graph form, but without all the hard coding that we did in 04-decision-trees.Rmd. Random Forest estimates variable importance by separately examining each variable and estimating how much the model's accuracy drops when that variable's values are randomly shuffled (permuted). The shuffling temporarily removes any relationship between that covariate's value and the outcome. If a variable is important then the model's accuracy will suffer a large drop when it is randomly shuffled. But if the model's accuracy doesn't change it means the variable is not important to the model - e.g. maybe it was never even chosen as a split in any of the decision trees.
+
+
+```{r plot_tree}
+importance(rf_model)
+```
+
+The first measure is computed from permuting OOB data: For each tree, the prediction error on the out-of-bag portion of the data is recorded (error rate for classification, MSE for regression). Then the same is done after permuting each predictor variable. The difference between the two are then averaged over all trees, and normalized by the standard deviation of the differences. If the standard deviation of the differences is equal to 0 for a variable, the division is not done (but the average is almost always equal to 0 in that case).
+
+The second measure is the total decrease in node impurities from splitting on the variable, averaged over all trees. For classification, the node impurity is measured by the Gini index. For regression, it is measured by residual sum of squares.
+
+### _Breast cancer_ dataset
+
+Now let's look at a more challenging dataset.
+
+
+```{r}
+set.seed(3)
+
+BC.data <- subset(BreastCancer[,-1],!is.na(Bare.nuclei))
+
+rf_model = randomForest(Class ~ ., data = BC.data,importance=TRUE)
+print(rf_model)
+```
+
+Notice for example that Bl.cromatin and Normal.nucleoli have similar values of mean decrease in overall accuracy when permuted, but they have different importance for each class.  
+```{r plot_tree}
+importance(rf_model)
+```
+
+```{r}
+varImpPlot(rf_model,type=1)
+```
+
+```{r}
+vip(rf_model,type=1)
+```
+
+
+Read up on the [gini coefficient](https://en.wikipedia.org/wiki/Gini_coefficient) here. It's basically a measure of diversity or dispersion - a higher gini means the model is classifying better. The gini version does not randomly shuffle the variable values.  
+
+Now, the goal is to see how the model performs on the test dataset:
+
+
+
+We can also look inside of `tree` to see what we can unpack. "variable.importance" is one we should check out!
+
+```{r}
+names(tree)
+tree$variable.importance
+```
+
+Plot variable importance
+
+```{r}
+# Turn the tree$variable.importance vector into a dataframe
+tree_varimp = data.frame(tree$variable.importance)
+
+# Add rownames as their own column
+tree_varimp$x = rownames(tree_varimp)
+
+# Reorder clumns
+tree_varimp = tree_varimp[, c(2,1)]
+
+# Reset row names
+rownames(tree_varimp) = NULL
+
+# Rename columns
+names(tree_varimp) = c("Variable", "Importance")
+tree_varimp
+
+# Plot
+ggplot(tree_varimp, aes(x = reorder(Variable, Importance),
+                        y = Importance)) +
+  geom_bar(stat = "identity") +
+  theme_bw() + coord_flip() + xlab("")
+```
+
+In decision trees the main hyperparameter (configuration setting) is the **complexity parameter** (CP), but the name is a little counterintuitive; a high CP results in a simple decision tree with few splits, whereas a low CP results in a larger decision tree with many splits.
+
+`rpart` uses cross-validation internally to estimate the accuracy at various CP settings. We can review those to see what setting seems best.
+
+Print the results for various CP settings - we want the one with the lowest "xerror". We can also plot the performance estimates for different CP settings.
+
+```{r plotcp_tree}
+# Show estimated error rate at different complexity parameter settings.
+printcp(tree)
+
+# Plot those estimated error rates.
+plotcp(tree)
+
+# Trees of similar sizes might appear to be tied for lowest "xerror", but a tree with fewer splits might be easier to interpret.
+
+tree_pruned2 = prune(tree, cp = 0.028986) # 2 splits
+
+tree_pruned6 = prune(tree, cp = 0.010870) # 6 splits
+```
+
+Print detailed results, variable importance, and summary of splits.
+
+```{r}
+summary(tree_pruned2)
+rpart.plot(tree_pruned2)
+```
+```{r}
+summary(tree_pruned6)
+rpart.plot(tree_pruned6)
+```
+
+You can also get more fine-grained control by checking out the "control" argument inside the rpart function. Type `?rpart` to learn more.
+
+Be sure to check out [gormanalysis](https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/) excellent overview to help internalize what you learned in this example.
