@@ -1,5 +1,5 @@
-# workshop-random-forests
-Workshop: randomForest in R
+# Workshop: randomForest in R
+
 José R. Ferrer-Paris (@jrfep) for UNSW codeRs.
 
 ## Abstract
