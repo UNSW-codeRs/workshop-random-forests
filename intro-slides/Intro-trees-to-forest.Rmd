@@ -1,8 +1,10 @@
 ---
-title: 'From trees to forest'
+title: 'From (classification) trees to (random) forest'
 author: "JR Ferrer-Paris"
 date: "29/06/2021"
-output: ioslides_presentation
+output: 
+  ioslides_presentation:
+    logo: logo.png
 ---
 
 ```{r setup, include=FALSE}
@@ -213,17 +215,29 @@ compare.results
 Now imagine instead of 3 students, we have 30 students, each one has a different sample of individuals, and each one chooses randomly two variables to measure:
 
 - we will have 30 slightly different trees to classify the species!
-- we can test each tree with each (sub-)data set, 
-- so we will have 900 tests of accuracy...
+- we can test each tree with each (sub-)data set
+- we can compare which variables produce better trees (variable importance)
 
-## But if three trees are not good enough...
+## Random Forest
 
-- We can of course select the tree(s) with the best outcome overall... 
-- We can compare which variables produce better trees (variable importance)
-- But what happens if a data set is better predicted by a different set of rules?
-- Or if we go to the level of the observation, which trees predict that observation?
+So Random Forest are an _ensemble_ of decision trees (hence "forest") in which each tree is grown independently using two randomization techniques: 
 
-```{r compare2}
+1. Botstrap aggregation (_Bagging_) of observations and 
+1. _Variable randomization_
 
-compare.results[-1,]
-```
+## Botstrap aggregation
+
+_Bagging_ consists of three steps:
+
+- The original data is sampled with replacement, this sample goes IN THE BAG.
+- The model is fitted with the data IN THE BAG.
+- The model is used to predict the values of the samples OUT OF THE BAG (OOB).
+
+In Random Forest the "model" is a single decision tree, and this procedure is repeated for each model.
+Each observation is placed in or out of the _bag_ each time.
+
+## Variable randomization
+
+The decision trees have rules to optimize which variable to select in each split. This means that decision trees will converge to similar solutions if they use similar data and variables.
+
+In Random Forests only a random subset of variables are used in each split. This introduces variability in the trees, reducing their correlation, and allows the algorithm to explore different solutions.  
