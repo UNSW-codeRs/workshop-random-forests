@@ -162,3 +162,14 @@ rpart.plot(tree_pruned2)
 summary(tree_pruned6)
 rpart.plot(tree_pruned6)
 ```
+
+## That's it for now!
+
+Let's move to the next [document](02-hands-on-randmom-forest.Rmd).
+
+---
+
+#### Session information:
+```{r sessionInfo}
+sessionInfo()
+```

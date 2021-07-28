@@ -161,3 +161,15 @@ abline(h=0.5,lty=2,col=2)
 ```
 
 Using a lower threshold (for example 0.4 or 40% of votes) to classify a tumor as malignant would reduce the false negative rate.
+
+
+## That's it for now!
+
+Any questions?
+
+---
+
+#### Session information:
+```{r sessionInfo}
+sessionInfo()
+```
