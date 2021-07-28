@@ -29,6 +29,7 @@ José Rafael Ferrer-Paris (a.k.a. JR) is currently Research Fellow at the Center
 - https://davetang.org/muse/2013/03/12/building-a-classification-tree-in-r/
 - https://towardsdatascience.com/why-random-forest-is-my-favorite-machine-learning-model-b97651fa3706
 - https://careerfoundry.com/en/blog/data-analytics/what-is-random-forest/
+- https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/
 
 Example with caret package:
 - https://www.janbasktraining.com/blog/random-forest-in-r/

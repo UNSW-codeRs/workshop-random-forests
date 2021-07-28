@@ -71,6 +71,7 @@ We can visualise the same information in a fancy _rpart.plot_:
 rpart.plot::rpart.plot(tree)
 ```
 
+When an end node only contains samples from a single class it is considered to be "pure". So the node for _I. setosa_ is pure, the others have 2 and 9% impurity.
 
 ### _Breast cancer_ dataset
 
@@ -95,7 +96,7 @@ The plot is a great visual aid, but what do all these values mean?
 rpart.plot::rpart.plot(tree)
 ```
 
-Here the output or response variable has two classes, so the rules are slightly simplified. Each box is labelled with the predominant class on top, the proportion of observations in the second class within each group, and the percentage of total observation within the group. Compare figure and text to try make sense of this.
+Here the output or response variable has two classes, so the rules are slightly simplified. Each box is labelled with the predominant class on top, the proportion of observations in the second class within each group (in this case 'malignant'), and the percentage of total observation within the group. Compare figure and text to try make sense of this.
 
 
 We can also look inside of `tree` to see what we can unpack. "variable.importance" is one we should check out!
@@ -161,7 +162,3 @@ rpart.plot(tree_pruned2)
 summary(tree_pruned6)
 rpart.plot(tree_pruned6)
 ```
-
-You can also get more fine-grained control by checking out the "control" argument inside the rpart function. Type `?rpart` to learn more.
-
-Be sure to check out [gormanalysis](https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/) excellent overview to help internalize what you learned in this example.
