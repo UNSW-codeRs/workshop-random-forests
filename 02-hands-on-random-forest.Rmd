@@ -1,0 +1,163 @@
+---
+title: "Random Forest in R"
+author: "JR Ferrer-Paris"
+date: "28/07/2021"
+editor_options:
+  chunk_output_type: console
+---
+
+## Overview
+
+The random forest algorithm seeks to improve on the performance of a single decision tree by taking the average of many trees. Thus, a random forest can be viewed as an **ensemble** method, or model averaging approach.
+
+Random forests use **bagging** and **variable randomization** to create different conditions for each tree. As a result, the average of these trees tends to be more accurate overall than a single tree.
+
+## What data do we need?
+
+The same as any regular classification decision tree!
+
+- Y: The output or response variable is a categorical variable with two or more classes (in R: factor with two or more levels)
+- X: A set of predictors or features, might be a mix of continuous and categorical variables, they should not have any missing values
+
+### Load data
+
+Here we will work again with two examples.
+
+First, we will use the _iris_ dataset from base R.
+```{r}
+data(iris)
+str(iris)
+```
+
+We can load the Breast Cancer dataset from the _mlbench_ package
+```{r}
+require(mlbench)
+data(BreastCancer)
+str(BreastCancer)
+```
+
+## What package to use
+
+Random Forests are implemented in several packages:
+- _randomForest_: Breiman and Cutler's Random Forests for Classification and Regression
+- _ranger_: A Fast Implementation of Random Forests
+- _party_: A Laboratory for Recursive Partytioning
+- _RandomForestsGLS_: Random Forests for Dependent Data
+- _randomForestSRC_: Fast Unified Random Forests for Survival, Regression, and Classification (RF-SRC)
+- _Rborist_: Extensible, Parallelizable Implementation of the Random Forest Algorithm
+ etc.
+
+Some helper packages are:
+- _randomForestExplainer_: Explaining and Visualizing Random Forests in Terms of Variable Importance
+- _vip_: Variable Importance Plots
+- _varImp_: Variable Importance Plots
+- _caret_: Classification and Regression Training
+- _tidymodels_: tidy model framework (model workflows)
+
+### Load packages
+
+Here we will work with package _randomForest_.
+
+```{r load_packages}
+library(randomForest)
+```
+
+
+## Fit a model
+
+### _iris_ dataset
+Let's start with a familiar dataset:
+
+```{r}
+set.seed(3)
+
+rf_model = randomForest(Species ~ ., data = iris, ntree=30)
+print(rf_model)
+```
+
+The "OOB estimate of error rate" shows us how accurate our model is. $accuracy = 1 - error rate$. OOB stands for "out of bag" - and bag is short for "bootstrap aggregation". So OOB estimates performance by comparing the predicted outcome value to the actual value across all trees using only the observations that were not part of the training data for that tree.
+
+So a forest is made up of trees, right? Let's see tree number three:
+```{r}
+getTree(rf_model, 3, labelVar=TRUE)
+```
+
+This is not very user friendly... but normally we would focus on the forest rather than the individual trees.
+
+Key question here is, why are these trees so complex compared to the ones we saw before? We can control the complexity of the trees with `nodesize` and `maxnode` parameters. For example a large node size and small number of nodes will result in simpler/shorter trees, but this could increase OOB error rates:
+
+```{r}
+rf2 = randomForest(Species ~ ., data = iris, ntree=30, nodesize=20, maxnodes=5)
+print(rf2)
+getTree(rf2, 3, labelVar=TRUE)
+```
+
+We can also control the number of variables sampled in each split with `mtry`, by default randomForest will test one third of the variables in each split and choose the best one. Here we can use all four variables each time:
+
+```{r}
+rf3 = randomForest(Species ~ ., data = iris, ntree=30, mtry=4)
+print(rf3)
+```
+
+These three hyper-parameters can be tuned to get better results:
+
+```{r}
+for (ns in c(5,25)) {
+  for (mn in c(5,15)) {
+  for (mt in c(2,4)) {
+  rf1 <- randomForest(Species ~ ., data = iris, nodesize=ns, maxnodes=mn, mtry=mt, ntree=30)
+  cat(sprintf("nodesize=%02d maxnodes=%02d mtry=%s OOB-error=%0.4f\n", ns, mn,mt, rf1$err.rate[30,"OOB"]))
+  }
+  }
+}
+```
+
+However this is subject to variability due to randomness, and a better fine-tuning requires several replicate runs of each combinations. Some functions  can be used to do this more efficiently, for example `randomForest::tuneRF` or the workflow in `tidymodels`.
+
+### _Breast cancer_ dataset
+
+Let's look at a more complex example breast cancer dataset.
+
+```{r}
+set.seed(3)
+
+BC.data <- subset(BreastCancer[,-1],!is.na(Bare.nuclei))
+
+rf_model = randomForest(Class ~ ., data = BC.data,importance=TRUE)
+print(rf_model)
+```
+
+Random Forest estimates variable importance in two different ways: one is by comparing the accuracy of the original prediction with the accuracy of a prediction based on a randomly shuffled (permuted) variable. If a variable is important then the model's accuracy will suffer a large drop when it is randomly shuffled. But the accuracy is similar, then the variable is not important to the model.
+
+The second measure is the total decrease in node impurities from splitting on the variable, averaged over all trees. For classification, the node impurity is measured by the [Gini index](https://en.wikipedia.org/wiki/Gini_coefficient). It's basically a measure of diversity or dispersion - a higher gini means the model is classifying better.
+
+```{r importance}
+importance(rf_model)
+```
+
+Notice for example that `Bl.cromatin` and `Normal.nucleoli` have similar values of mean decrease in overall accuracy when permuted, but they have different importance for each class.
+
+```{r ImpPlot}
+varImpPlot(rf_model,type=1)
+```
+
+Now let's look at the prediction for each observation. The confusion matrix compares observed with predicted values and shows the classification error for each class.
+
+```{r}
+rf_model$confusion
+```
+
+The classification error is very low, but we might be interested in exploring those cases of misclassification (we don't want a malign tumor to be misclassified). Each observation has a number of OOB predictions, these are considered "votes" for a class, and the observation is assigned to the class with the majority of votes. Let's look at the _votes_ object for this model:
+
+```{r}
+head(rf_model$votes)
+```
+
+We can compare the votes for the second class ('malignant') and compare them between the two classes:
+
+```{r}
+boxplot(rf_model$votes[,2]~rf_model$y,xlab="",ylab="votes for 'malignant'")
+abline(h=0.5,lty=2,col=2)
+```
+
+Using a lower threshold (for example 0.4 or 40% of votes) to classify a tumor as malignant would reduce the false negative rate.
