@@ -73,21 +73,51 @@ Let's start with a familiar dataset:
 ```{r}
 set.seed(3)
 
-rf_model = randomForest(Species ~ ., data = iris,importance=TRUE)
+rf_model = randomForest(Species ~ ., data = iris, ntree=30)
 print(rf_model)
 ```
+
 The "OOB estimate of error rate" shows us how accurate our model is. $accuracy = 1 - error rate$. OOB stands for "out of bag" - and bag is short for "bootstrap aggregation". So OOB estimates performance by comparing the predicted outcome value to the actual value across all trees using only the observations that were not part of the training data for that tree.
 
-We can examine the relative variable importance in table and graph form, but without all the hard coding that we did in 04-decision-trees.Rmd. Random Forest estimates variable importance by separately examining each variable and estimating how much the model's accuracy drops when that variable's values are randomly shuffled (permuted). The shuffling temporarily removes any relationship between that covariate's value and the outcome. If a variable is important then the model's accuracy will suffer a large drop when it is randomly shuffled. But if the model's accuracy doesn't change it means the variable is not important to the model - e.g. maybe it was never even chosen as a split in any of the decision trees.
+So a forest is made up of trees, right?
 
-
-```{r plot_tree}
-importance(rf_model)
+Let's see tree number three:
+```{r}
+getTree(rf_model, 3, labelVar=TRUE)
 ```
 
-The first measure is computed from permuting OOB data: For each tree, the prediction error on the out-of-bag portion of the data is recorded (error rate for classification, MSE for regression). Then the same is done after permuting each predictor variable. The difference between the two are then averaged over all trees, and normalized by the standard deviation of the differences. If the standard deviation of the differences is equal to 0 for a variable, the division is not done (but the average is almost always equal to 0 in that case).
+Why are these trees so complex? We can control the complexity of the trees with `nodesize` and `maxnode` parameters. For example a large node size and small number of nodes will result in simpler/shorter trees, but this could increase OOB error rates:
 
-The second measure is the total decrease in node impurities from splitting on the variable, averaged over all trees. For classification, the node impurity is measured by the Gini index. For regression, it is measured by residual sum of squares.
+```{r}
+rf2 = randomForest(Species ~ ., data = iris, ntree=30, nodesize=20, maxnodes=5)
+print(rf2)
+getTree(rf2, 3, labelVar=TRUE)
+
+```
+
+We can also control the number of variables sampled in each split with `mtry`, by default randomForest will test one third of the variables in each split and choose the best one. Here we can use all four variables each time:
+
+
+```{r}
+rf3 = randomForest(Species ~ ., data = iris, ntree=30, mtry=4)
+print(rf3)
+```
+
+These three hyper-parameters can be tuned to get better results:
+
+```{r}
+for (ns in c(5,25)) {
+  for (mn in c(5,15)) {
+  for (mt in c(2,4)) {
+  rf1 <- randomForest(Species ~ ., data = iris, nodesize=ns, maxnodes=mn, mtry=mt, ntree=30)  
+  cat(sprintf("nodesize=%02d maxnodes=%02d mtry=%s OOB-error=%0.4f\n", ns, mn,mt, rf1$err.rate[30,"OOB"]))
+  }
+  }
+}
+```
+
+However this is subject to variability due to randomness, and a better fine-tuning requires several replicate runs of each combinations. Some functions in packages ... can be used to do this more efficiently.
+
 
 ### _Breast cancer_ dataset
 
@@ -103,6 +133,23 @@ rf_model = randomForest(Class ~ ., data = BC.data,importance=TRUE)
 print(rf_model)
 ```
 
+
+
+
+We can examine the relative variable importance in table and graph form, but without all the hard coding that we did in 04-decision-trees.Rmd. Random Forest estimates variable importance by separately examining each variable and estimating how much the model's accuracy drops when that variable's values are randomly shuffled (permuted). The shuffling temporarily removes any relationship between that covariate's value and the outcome. If a variable is important then the model's accuracy will suffer a large drop when it is randomly shuffled. But if the model's accuracy doesn't change it means the variable is not important to the model - e.g. maybe it was never even chosen as a split in any of the decision trees.
+
+
+```{r plot_tree}
+importance(rf_model)
+```
+
+The first measure is computed from permuting OOB data: For each tree, the prediction error on the out-of-bag portion of the data is recorded (error rate for classification, MSE for regression). Then the same is done after permuting each predictor variable. The difference between the two are then averaged over all trees, and normalized by the standard deviation of the differences. If the standard deviation of the differences is equal to 0 for a variable, the division is not done (but the average is almost always equal to 0 in that case).
+
+The second measure is the total decrease in node impurities from splitting on the variable, averaged over all trees. For classification, the node impurity is measured by the Gini index. For regression, it is measured by residual sum of squares.
+
+
+Read up on the [gini coefficient](https://en.wikipedia.org/wiki/Gini_coefficient) here. It's basically a measure of diversity or dispersion - a higher gini means the model is classifying better. The gini version does not randomly shuffle the variable values.  
+
 Notice for example that Bl.cromatin and Normal.nucleoli have similar values of mean decrease in overall accuracy when permuted, but they have different importance for each class.  
 ```{r plot_tree}
 importance(rf_model)
@@ -117,8 +164,6 @@ vip(rf_model,type=1)
 ```
 
 
-Read up on the [gini coefficient](https://en.wikipedia.org/wiki/Gini_coefficient) here. It's basically a measure of diversity or dispersion - a higher gini means the model is classifying better. The gini version does not randomly shuffle the variable values.  
-
 Now, the goal is to see how the model performs on the test dataset:
 
 
@@ -126,67 +171,14 @@ Now, the goal is to see how the model performs on the test dataset:
 We can also look inside of `tree` to see what we can unpack. "variable.importance" is one we should check out!
 
 ```{r}
-names(tree)
-tree$variable.importance
+names(rf_model)
+str(rf_model$forest)
 ```
 
 Plot variable importance
 
 ```{r}
-# Turn the tree$variable.importance vector into a dataframe
-tree_varimp = data.frame(tree$variable.importance)
-
-# Add rownames as their own column
-tree_varimp$x = rownames(tree_varimp)
-
-# Reorder clumns
-tree_varimp = tree_varimp[, c(2,1)]
-
-# Reset row names
-rownames(tree_varimp) = NULL
-
-# Rename columns
-names(tree_varimp) = c("Variable", "Importance")
-tree_varimp
-
-# Plot
-ggplot(tree_varimp, aes(x = reorder(Variable, Importance),
-                        y = Importance)) +
-  geom_bar(stat = "identity") +
-  theme_bw() + coord_flip() + xlab("")
+str(rf_model$forest)
 ```
 
-In decision trees the main hyperparameter (configuration setting) is the **complexity parameter** (CP), but the name is a little counterintuitive; a high CP results in a simple decision tree with few splits, whereas a low CP results in a larger decision tree with many splits.
 
-`rpart` uses cross-validation internally to estimate the accuracy at various CP settings. We can review those to see what setting seems best.
-
-Print the results for various CP settings - we want the one with the lowest "xerror". We can also plot the performance estimates for different CP settings.
-
-```{r plotcp_tree}
-# Show estimated error rate at different complexity parameter settings.
-printcp(tree)
-
-# Plot those estimated error rates.
-plotcp(tree)
-
-# Trees of similar sizes might appear to be tied for lowest "xerror", but a tree with fewer splits might be easier to interpret.
-
-tree_pruned2 = prune(tree, cp = 0.028986) # 2 splits
-
-tree_pruned6 = prune(tree, cp = 0.010870) # 6 splits
-```
-
-Print detailed results, variable importance, and summary of splits.
-
-```{r}
-summary(tree_pruned2)
-rpart.plot(tree_pruned2)
-```
-```{r}
-summary(tree_pruned6)
-rpart.plot(tree_pruned6)
-```
-
-You can also get more fine-grained control by checking out the "control" argument inside the rpart function. Type `?rpart` to learn more.
-
-Be sure to check out [gormanalysis](https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/) excellent overview to help internalize what you learned in this example.
