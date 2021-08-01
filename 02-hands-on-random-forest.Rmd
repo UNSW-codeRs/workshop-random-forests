@@ -119,7 +119,7 @@ However this is subject to variability due to randomness, and a better fine-tuni
 Let's look at a more complex example breast cancer dataset.
 
 ```{r}
-set.seed(3)
+set.seed(83)
 
 BC.data <- subset(BreastCancer[,-1],!is.na(Bare.nuclei))
 
