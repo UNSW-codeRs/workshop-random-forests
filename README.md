@@ -26,3 +26,12 @@ José Rafael Ferrer-Paris (a.k.a. JR) is currently Research Fellow at the Center
 - Bradley Boehmke & Brandon Greenwell **Hands-On Machine Learning with R** https://bradleyboehmke.github.io/HOML/random-forest.html
 - Julia Kho **Why Random Forest is My Favorite Machine Learning Model** https://towardsdatascience.com/why-random-forest-is-my-favorite-machine-learning-model-b97651fa3706
 - JanBask Training **A Practical guide to implementing Random Forest in R with example** https://www.janbasktraining.com/blog/random-forest-in-r/
+
+## R-markdown 
+
+To generate or update the R-scripts from R-markdown documents use:
+
+```{r}
+knitr::purl("01-hands-on-classification-tree.Rmd",documentation=2)
+knitr::purl("02-hands-on-random-forest.Rmd",documentation=2)
+```
