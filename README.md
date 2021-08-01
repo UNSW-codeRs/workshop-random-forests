@@ -17,19 +17,12 @@ José Rafael Ferrer-Paris (a.k.a. JR) is currently Research Fellow at the Center
 
 ## Material based on:
 
-- https://victorzhou.com/blog/intro-to-random-forests/
-- https://www.freecodecamp.org/news/how-to-use-the-tree-based-algorithm-for-machine-learning/
-- https://dlab-berkeley.github.io/Machine-Learning-in-R/slides.html#1
-- https://github.com/dlab-berkeley/Machine-Learning-in-R
-- https://github.com/dlab-berkeley/Machine-Learning-with-tidymodels
-- https://www.statology.org/classification-and-regression-trees-in-r/
-- https://bradleyboehmke.github.io/HOML/random-forest.html
-- https://icer.msu.edu/education-events/classification-regression-trees-random-forests-r
-- https://www.statology.org/classification-and-regression-trees-in-r/
-- https://davetang.org/muse/2013/03/12/building-a-classification-tree-in-r/
-- https://towardsdatascience.com/why-random-forest-is-my-favorite-machine-learning-model-b97651fa3706
-- https://careerfoundry.com/en/blog/data-analytics/what-is-random-forest/
-- https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/
-
-Example with caret package:
-- https://www.janbasktraining.com/blog/random-forest-in-r/
+- Davis David **Random Forest Classifier Tutorial: How to Use Tree-Based Algorithms for Machine Learning** https://www.freecodecamp.org/news/how-to-use-the-tree-based-algorithm-for-machine-learning/
+- Evan Muzzall and Chris Kennedy **Introduction to Machine Learning in R**: https://dlab-berkeley.github.io/Machine-Learning-in-R/slides.html | https://github.com/dlab-berkeley/Machine-Learning-in-R | https://github.com/dlab-berkeley/Machine-Learning-with-tidymodels
+- Dave Tang **Building a classification tree in R** https://davetang.org/muse/2013/03/12/building-a-classification-tree-in-r/
+- Zach @ Statology **How to Fit Classification and Regression Trees in R** https://www.statology.org/classification-and-regression-trees-in-r/
+- Ben Gorman **Decision Trees in R using rpart** https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/
+- Victor Zhou **Random Forests for Complete Beginners** at https://victorzhou.com/blog/intro-to-random-forests/
+- Bradley Boehmke & Brandon Greenwell **Hands-On Machine Learning with R** https://bradleyboehmke.github.io/HOML/random-forest.html
+- Julia Kho **Why Random Forest is My Favorite Machine Learning Model** https://towardsdatascience.com/why-random-forest-is-my-favorite-machine-learning-model-b97651fa3706
+- JanBask Training **A Practical guide to implementing Random Forest in R with example** https://www.janbasktraining.com/blog/random-forest-in-r/

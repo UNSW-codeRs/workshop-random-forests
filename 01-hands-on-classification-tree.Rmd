@@ -1,7 +1,17 @@
 ---
-title: 'Decision Trees in R'
+title: "Session 1: Decision Trees in R"
 author: "JR Ferrer-Paris"
-date: "09/07/2021"
+date: "02/08/2021"
+tags: [UNSW coders, Workshop]
+abstract: |
+  This document will walk you through examples to fit decision trees for classification using the _rpart_ package and two different datasets. This is part of the UNSW codeRs workshop: _Introduction to Classification Trees and Random Forests in R_ at https://github.com/UNSW-codeRs/workshop-random-forests
+
+  UNSW codeRs is a student and staff run community dedicated for ‘R’ users for anyone who wants to further develop their coding skills. It is our goal to create a safe and open space for members to share and gain new experiences relating to R, coding and statistics.
+
+  https://unsw-coders.netlify.app/
+output:
+    pdf_document:
+        template: NULL
 editor_options:
   chunk_output_type: console
 ---
@@ -18,15 +28,16 @@ Decision trees are recursive partitioning methods that divide the predictor spac
 
 Here we will work with two examples.
 
-First, we will use the _iris_ dataset from base R.
-```{r}
+First, we will use the _iris_ dataset from base R. This dataset has 150 observations with four measurements (continuous variables) for three species (categorical variable with three categories):
+
+```{r dataset1}
 data(iris)
 str(iris)
 ```
 
+As a second example we will use the Breast Cancer dataset from the _mlbench_ package. This dataset has 699 observations with 9 nominal or ordinal variables describing cell properties and the output or target variable is the class of tumor with two possible values: bening or malignant:
 
-We can load the Breast Cancer dataset from the _mlbench_ package
-```{r}
+```{r dataset2}
 require(mlbench)
 data(BreastCancer)
 str(BreastCancer)
@@ -35,17 +46,17 @@ str(BreastCancer)
 ## What package to use
 
 Classification trees are implemented in packages:
+
 - _tree_: Classification and Regression Trees
 - _rpart_: Recursive Partitioning and Regression Trees
 
 ### Load packages
 
-Here we will work with package _rpart_, and we will also load two additional packages for creating the plots
+Here we will work with package _rpart_, and we will also load additional packages for creating the plots
 
 ```{r load_packages}
 library(rpart)
 # auxiliary packages for plotting:
-library(ggplot2)
 library(rpart.plot)
 ```
 
@@ -55,7 +66,7 @@ library(rpart.plot)
 ### _iris_ dataset
 Let's start with a familiar dataset:
 
-```{r}
+```{r tree_iris}
 set.seed(3)
 
 tree = rpart::rpart(Species ~ ., data = iris,
@@ -67,18 +78,20 @@ This is a very simple tree and we can walk through the output recognising three 
 
 We can visualise the same information in a fancy _rpart.plot_:
 
-```{r plot_tree}
+```{r plot_tree_iris}
 rpart.plot::rpart.plot(tree)
 ```
 
-When an end node only contains samples from a single class it is considered to be "pure". So the node for _I. setosa_ is pure, the others have 2 and 9% impurity.
+This function use different colors for each category, splits are labelled with the variable and threshold used. Root nodes are on top, and end-nodes are at the bottom, each node is labelled with the modal category and has information on the proportion of observation in each category and the percentage of the total sample size.
+
+When an end node only contains samples from a single class it is considered to be "pure". So the end-node for _I. setosa_ at the bottom left is pure, the other end-nodes have 2 and 9% impurity.
 
 ### _Breast cancer_ dataset
 
 Now let's look at a more challenging dataset.
 
 
-```{r}
+```{r tree_breast_cancer}
 set.seed(3)
 
 BC.data <- BreastCancer[,-1]
@@ -92,84 +105,78 @@ This is a more complex tree with up to five levels of branching, can you see the
 
 The plot is a great visual aid, but what do all these values mean?
 
-```{r plot_tree}
+```{r plot_tree_breast_cancer}
 rpart.plot::rpart.plot(tree)
 ```
 
-Here the output or response variable has two classes, so the rules are slightly simplified. Each box is labelled with the predominant class on top, the proportion of observations in the second class within each group (in this case 'malignant'), and the percentage of total observation within the group. Compare figure and text to try make sense of this.
+Here the output or response variable has two categories, so the rules are slightly simplified, but is actually all pretty similar as the previos example. Each box is labelled with the modal category on top, the proportion of observations in the second class within each group (in this case 'malignant'), and the percentage of total observation within the group. Compare figure and text to try make sense of this.
 
 
-We can also look inside of `tree` to see what we can unpack. "variable.importance" is one we should check out!
+#### Variable importance
 
-```{r}
+We can also look inside of `tree` object to see its components, for example  "variable.importance":
+
+```{r variable_importance}
 names(tree)
-tree$variable.importance
+data.frame(tree$variable.importance)
 ```
 
-Plot variable importance
-
-```{r}
-# Turn the tree$variable.importance vector into a dataframe
-tree_varimp = data.frame(tree$variable.importance)
-
-# Add rownames as their own column
-tree_varimp$x = rownames(tree_varimp)
-
-# Reorder clumns
-tree_varimp = tree_varimp[, c(2,1)]
-
-# Reset row names
-rownames(tree_varimp) = NULL
-
-# Rename columns
-names(tree_varimp) = c("Variable", "Importance")
-tree_varimp
-
-# Plot
-ggplot(tree_varimp, aes(x = reorder(Variable, Importance),
-                        y = Importance)) +
-  geom_bar(stat = "identity") +
-  theme_bw() + coord_flip() + xlab("")
-```
+#### Complexity parameter
 
 In decision trees the main hyperparameter (configuration setting) is the **complexity parameter** (CP), but the name is a little counterintuitive; a high CP results in a simple decision tree with few splits, whereas a low CP results in a larger decision tree with many splits.
 
 `rpart` uses cross-validation internally to estimate the accuracy at various CP settings. We can review those to see what setting seems best.
 
-Print the results for various CP settings - we want the one with the lowest "xerror". We can also plot the performance estimates for different CP settings.
+Print the results for various CP settings - we want the one with the lowest "xerror".
 
-```{r plotcp_tree}
-# Show estimated error rate at different complexity parameter settings.
+```{r print_complex_parameter}
 printcp(tree)
-
-# Plot those estimated error rates.
-plotcp(tree)
-
-# Trees of similar sizes might appear to be tied for lowest "xerror", but a tree with fewer splits might be easier to interpret.
-
-tree_pruned2 = prune(tree, cp = 0.028986) # 2 splits
-
-tree_pruned6 = prune(tree, cp = 0.010870) # 6 splits
 ```
 
-Print detailed results, variable importance, and summary of splits.
+We can visualise this using this function:
+
+```{r plot_complex_parameter}
+plotcp(tree)
+```
+
+There is an obvious drop between 1 and 2, but afterwards the differences in xerror are pretty small. Considering that a tree with fewer splits might be easier to interpret we can adjust the `cp` value:
+
+```{r prune_tree}
+tree_pruned2 = prune(tree, cp = 0.037)
+```
+
+How does it look?
+
+```{r}
+rpart.plot(tree_pruned2)
+```
+
+So this tree looks much simpler, but is it good enough? Notice that the end-nodes on the left and right have relative low impurity and together include 96% of the original sample. So with only two variables we can get a good discrimination of most of the samples.
+
+If we want to look at the detailed results, variable importance, and summary of splits we can use:
 
 ```{r}
 summary(tree_pruned2)
-rpart.plot(tree_pruned2)
-```
-```{r}
-summary(tree_pruned6)
-rpart.plot(tree_pruned6)
 ```
 
-## That's it for now!
+And compare this output with the previous `tree` object.
 
-Let's move to the next [document](02-hands-on-randmom-forest.Rmd).
 
----
+That's it for now! Let's move to the next [document](02-hands-on-randmom-forest.Rmd).
+
+## Post-scriptum
+
+#### Additional resources
+
+- Davis David [**Random Forest Classifier Tutorial: How to Use Tree-Based Algorithms for Machine Learning**](https://www.freecodecamp.org/news/how-to-use-the-tree-based-algorithm-for-machine-learning/)
+- Evan Muzzall and Chris Kennedy [**Introduction to Machine Learning in R**](https://dlab-berkeley.github.io/Machine-Learning-in-R/slides.html)
+- Dave Tang [**Building a classification tree in R**](https://davetang.org/muse/2013/03/12/building-a-classification-tree-in-r/)
+- Zach @ Statology [**How to Fit Classification and Regression Trees in R**](https://www.statology.org/classification-and-regression-trees-in-r/)
+- Ben Gorman [**Decision Trees in R using rpart**](https://www.gormanalysis.com/blog/decision-trees-in-r-using-rpart/)
+
 
 #### Session information:
+
 ```{r sessionInfo}
 sessionInfo()
 ```
