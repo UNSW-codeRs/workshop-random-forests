@@ -1,5 +1,7 @@
 # Workshop: randomForest in R
 
+![License: CC BY 4.0](https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
+
 José R. Ferrer-Paris (@jrfep) for UNSW codeRs.
 
 ## Abstract
@@ -27,7 +29,7 @@ José Rafael Ferrer-Paris (a.k.a. JR) is currently Research Fellow at the Center
 - Julia Kho **Why Random Forest is My Favorite Machine Learning Model** https://towardsdatascience.com/why-random-forest-is-my-favorite-machine-learning-model-b97651fa3706
 - JanBask Training **A Practical guide to implementing Random Forest in R with example** https://www.janbasktraining.com/blog/random-forest-in-r/
 
-## R-markdown 
+## R-markdown
 
 To generate or update the R-scripts from R-markdown documents use:
 
